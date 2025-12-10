@@ -1,538 +1,170 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MegaQuiz Online</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Аркан Тартыш: Ultimate</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="setup-screen" class="setup-overlay">
+      <div class="setup-card">
+        <h1>АРКАН ТАРТЫШ</h1>
+        <p class="subtitle">Математическая битва</p>
 
-    <style>
-        :root {
-            --primary: #6c5ce7;
-            --secondary: #a29bfe;
-            --accent: #00cec9;
-            --bg-color: #dfe6e9;
-            --card-bg: #ffffff;
-            --text: #2d3436;
-        }
-
-        body {
-            font-family: 'Fredoka', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text);
-            transition: background-color 1s ease;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        h1, h2 { margin: 0 0 15px 0; color: var(--primary); }
-        
-        input, select, button {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 12px;
-            border: 2px solid #eee;
-            font-size: 16px;
-            font-family: inherit;
-            box-sizing: border-box;
-        }
-
-        button {
-            background: var(--primary);
-            color: white;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        button:active { transform: scale(0.96); }
-        
-        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-danger { background: #ff7675; }
-
-        /* Игровые элементы */
-        .options-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .option-btn {
-            background: #f1f2f6;
-            color: var(--text);
-            padding: 20px;
-            font-size: 1.1rem;
-        }
-
-        .option-btn.selected { background: var(--secondary); color: white; border: 2px solid var(--primary); }
-        .option-btn.correct { background: #00b894 !important; color: white; animation: shake 0.5s; }
-        .option-btn.wrong { background: #ff7675 !important; color: white; animation: shake 0.5s; }
-
-        .player-list {
-            list-style: none;
-            padding: 0;
-            text-align: left;
-        }
-        .player-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            font-weight: bold;
-        }
-        .player-score { color: var(--primary); }
-
-        .hidden { display: none !important; }
-
-        /* Анимации */
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-
-        /* Админка */
-        #admin-panel { border: 2px dashed #b2bec3; background: #fdfdfd; }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin:0;">🚀 MegaQuiz</h3>
-            <button id="btn-login-toggle" style="width: auto; padding: 5px 10px; font-size: 12px;">Admin Login</button>
+        <div class="settings-group">
+          <label>Имена команд:</label>
+          <div class="inputs-row">
+            <input
+              type="text"
+              id="name-team-1"
+              placeholder="Красные"
+              value="Красные"
+            />
+            <input
+              type="text"
+              id="name-team-2"
+              placeholder="Синие"
+              value="Синие"
+            />
+          </div>
         </div>
 
-        <div id="screen-auth" class="card hidden">
-            <h2>Вход для Авторов</h2>
-            <input type="email" id="auth-email" placeholder="Email">
-            <input type="password" id="auth-pass" placeholder="Пароль">
-            <button onclick="login()">Войти</button>
-            <button onclick="register()" class="btn-outline">Регистрация</button>
-            <p id="auth-msg" style="color:red; font-size:12px;"></p>
+        <div class="settings-group">
+          <label>Сложность:</label>
+          <select id="difficulty-select">
+            <option value="20">Легко (до 20)</option>
+            <option value="50">Средне (до 50)</option>
+            <option value="100">Сложно (до 100)</option>
+            <option value="hard">Эйнштейн (× и ÷)</option>
+          </select>
         </div>
 
-        <div id="screen-admin" class="card hidden">
-            <h2>Добавить вопрос</h2>
-            <select id="new-cat">
-                <option value="math">Математика</option>
-                <option value="history">История</option>
-                <option value="science">Наука</option>
-                <option value="cinema">Кино</option>
-            </select>
-            <input type="text" id="new-q" placeholder="Текст вопроса">
-            <input type="text" id="new-a1" placeholder="Ответ 1 (Правильный)">
-            <input type="text" id="new-a2" placeholder="Ответ 2">
-            <input type="text" id="new-a3" placeholder="Ответ 3">
-            <input type="text" id="new-a4" placeholder="Ответ 4">
-            <button onclick="addQuestion()">Сохранить вопрос</button>
-            <button onclick="logout()" class="btn-danger">Выйти</button>
+        <button onclick="startGame(false)" class="btn-start btn-local">
+          НАЧАТЬ (ЛОКАЛЬНО)
+        </button>
+
+        <hr style="margin: 20px 0; border-top: 2px dashed #ccc" />
+
+        <h2>Онлайн-Битва</h2>
+
+        <div id="online-options">
+          <button onclick="createOnlineRoom()" class="btn-online btn-create">
+            СОЗДАТЬ КОМНАТУ
+          </button>
+          <div class="inputs-row" style="margin-top: 10px">
+            <input
+              type="text"
+              id="room-code-input"
+              placeholder="Код комнаты (1234)"
+              style="width: 70%"
+            />
+            <button
+              onclick="joinOnlineRoom()"
+              class="btn-online btn-join"
+              style="width: 30%"
+            >
+              ВОЙТИ
+            </button>
+          </div>
         </div>
 
-        <div id="screen-lobby" class="card">
-            <h1>Добро пожаловать!</h1>
-            <input type="text" id="player-name" placeholder="Ваше имя">
-            <div style="height: 1px; background: #eee; margin: 15px 0;"></div>
-            
-            <h3>Создать игру</h3>
-            <select id="game-cat">
-                <option value="math">Математика</option>
-                <option value="history">История</option>
-                <option value="science">Наука</option>
-                <option value="cinema">Кино</option>
-            </select>
-            <button onclick="createRoom()">Создать комнату</button>
-            
-            <h3 style="margin-top:20px;">Или присоединиться</h3>
-            <input type="text" id="room-code-input" placeholder="Код комнаты (напр. 1234)">
-            <button onclick="joinRoom()" class="btn-outline">Войти</button>
+        <div id="waiting-info" class="hidden">
+          <p>Комната: <strong id="display-room-code">----</strong></p>
+          <p id="waiting-message">Ожидание второго игрока...</p>
         </div>
 
-        <div id="screen-waiting" class="card hidden">
-            <h2 id="room-code-display">Комната: ----</h2>
-            <p>Ожидание игроков...</p>
-            <ul id="waiting-list" class="player-list"></ul>
-            <button id="btn-start-game" onclick="startGame()" class="hidden">НАЧАТЬ ИГРУ</button>
-            <p id="wait-msg">Ждем, пока хост начнет игру...</p>
-        </div>
-
-        <div id="screen-game" class="card hidden">
-            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #636e72;">
-                <span id="game-cat-display">Category</span>
-                <span id="game-timer">⏳</span>
-            </div>
-            <h2 id="question-text" style="font-size: 1.4rem; margin-top: 10px;">Загрузка...</h2>
-            
-            <div class="options-grid" id="options-container">
-                </div>
-            
-            <p id="feedback-msg" style="height: 20px; font-weight: bold;"></p>
-        </div>
-
-        <div id="screen-result" class="card hidden">
-            <h1>🏆 Финал!</h1>
-            <ul id="final-list" class="player-list"></ul>
-            <button onclick="location.reload()">В МЕНЮ</button>
-        </div>
-
+        <p class="footer-note">* Онлайн режим использует Firebase</p>
+      </div>
     </div>
 
-    <script>
-        // ==========================================
-        // ⚙️ НАСТРОЙКИ FIREBASE (ЗАМЕНИТЕ НА СВОИ!)
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyD-YOUR-API-KEY-HERE",
-            authDomain: "your-app.firebaseapp.com",
-            databaseURL: "https://your-app-default-rtdb.firebaseio.com",
-            projectId: "your-app",
-            storageBucket: "your-app.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcde"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
+  
 
-        // ==========================================
-        // 🧩 ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-        // ==========================================
-        let currentPlayer = { name: "", id: "", score: 0 };
-        let currentRoomId = null;
-        let isHost = false;
-        let questions = []; // Локальный кэш вопросов для текущей игры
-        let currentQIndex = 0;
+    <div id="game-screen" class="hidden">
+      <header class="top-bar">
+        <div class="score-box team-1-score">
+          <div class="team-name-label" id="label-1">TEAM 1</div>
+          <span id="score-1">0</span>
+        </div>
 
-        // ==========================================
-        // 🚀 БАЗОВЫЕ ВОПРОСЫ (ЕСЛИ БАЗА ПУСТА)
-        // ==========================================
-        const defaultQuestions = {
-            math: [
-                {q: "2 + 2 * 2 = ?", a: ["6", "8", "4", "10"], correct: "6"},
-                {q: "Корень из 144?", a: ["12", "14", "10", "16"], correct: "12"},
-                {q: "100 / 5", a: ["20", "25", "10", "50"], correct: "20"}
-            ],
-            history: [
-                {q: "Первый президент США?", a: ["Вашингтон", "Линкольн", "Кеннеди", "Трамп"], correct: "Вашингтон"},
-                {q: "Год основания Рима?", a: ["753 до н.э.", "1 г. н.э.", "400 до н.э.", "1000"], correct: "753 до н.э."}
-            ]
-        };
+        <div class="rope-track">
+          <div class="center-line"></div>
+          <div class="rope-shadow"></div>
 
-        // ==========================================
-        // 🎮 ЛОГИКА ИГРЫ
-        // ==========================================
+          <div id="rope-container">
+            <div class="rope-knot"></div>
+            <div class="rope-line left"></div>
+            <div class="rope-line right"></div>
+          </div>
+        </div>
 
-        function showScreen(id) {
-            document.querySelectorAll('.card').forEach(el => el.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-        }
+        <div class="score-box team-2-score">
+          <div class="team-name-label" id="label-2">TEAM 2</div>
+          <span id="score-2">0</span>
+        </div>
+      </header>
 
-        // --- Лобби ---
-        function createRoom() {
-            const name = document.getElementById('player-name').value;
-            if(!name) return alert("Введите имя!");
-            
-            const cat = document.getElementById('game-cat').value;
-            const roomId = Math.floor(1000 + Math.random() * 9000).toString(); // Простой ID из 4 цифр
-            
-            currentPlayer.name = name;
-            currentPlayer.id = Date.now().toString(); // Временный ID
-            isHost = true;
-            currentRoomId = roomId;
+      <main class="game-area">
+        <section class="team-panel team-1-panel">
+          <div class="monitor-wrapper">
+            <div class="question-display" id="q-1">Start...</div>
+            <div class="input-display" id="input-1"></div>
+          </div>
+          <div class="keypad">
+            <button onclick="pressKey(1, '1')">1</button>
+            <button onclick="pressKey(1, '2')">2</button>
+            <button onclick="pressKey(1, '3')">3</button>
+            <button onclick="pressKey(1, '4')">4</button>
+            <button onclick="pressKey(1, '5')">5</button>
+            <button onclick="pressKey(1, '6')">6</button>
+            <button onclick="pressKey(1, '7')">7</button>
+            <button onclick="pressKey(1, '8')">8</button>
+            <button onclick="pressKey(1, '9')">9</button>
+            <button onclick="pressKey(1, 'C')" class="btn-clear">C</button>
+            <button onclick="pressKey(1, '0')">0</button>
+            <button onclick="pressKey(1, 'OK')" class="btn-go">GO</button>
+          </div>
+        </section>
 
-            // Создаем комнату в БД
-            db.ref('rooms/' + roomId).set({
-                status: 'waiting',
-                category: cat,
-                questionIndex: 0,
-                players: {
-                    [currentPlayer.id]: { name: name, score: 0 }
-                }
-            });
+        <section class="team-panel team-2-panel">
+          <div class="monitor-wrapper">
+            <div class="question-display" id="q-2">Start...</div>
+            <div class="input-display" id="input-2"></div>
+          </div>
+          <div class="keypad">
+            <button onclick="pressKey(2, '1')">1</button>
+            <button onclick="pressKey(2, '2')">2</button>
+            <button onclick="pressKey(2, '3')">3</button>
+            <button onclick="pressKey(2, '4')">4</button>
+            <button onclick="pressKey(2, '5')">5</button>
+            <button onclick="pressKey(2, '6')">6</button>
+            <button onclick="pressKey(2, '7')">7</button>
+            <button onclick="pressKey(2, '8')">8</button>
+            <button onclick="pressKey(2, '9')">9</button>
+            <button onclick="pressKey(2, 'C')" class="btn-clear">C</button>
+            <button onclick="pressKey(2, '0')">0</button>
+            <button onclick="pressKey(2, 'OK')" class="btn-go">GO</button>
+          </div>
+        </section>
+      </main>
+    </div>
 
-            enterWaitingRoom();
-        }
+    <div id="winner-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2 id="winner-text">ПОБЕДА!</h2>
+        <button onclick="location.reload()">МЕНЮ</button>
+      </div>
+    </div>
 
-        function joinRoom() {
-            const name = document.getElementById('player-name').value;
-            const code = document.getElementById('room-code-input').value;
-            if(!name || !code) return alert("Введите имя и код!");
-
-            currentPlayer.name = name;
-            currentPlayer.id = Date.now().toString();
-            currentRoomId = code;
-            isHost = false;
-
-            const roomRef = db.ref('rooms/' + code);
-            roomRef.get().then((snapshot) => {
-                if (snapshot.exists() && snapshot.val().status === 'waiting') {
-                    roomRef.child('players/' + currentPlayer.id).set({
-                        name: name,
-                        score: 0
-                    });
-                    enterWaitingRoom();
-                } else {
-                    alert("Комната не найдена или игра уже идет!");
-                }
-            });
-        }
-
-        function enterWaitingRoom() {
-            showScreen('screen-waiting');
-            document.getElementById('room-code-display').innerText = `Комната: ${currentRoomId}`;
-            
-            if(isHost) {
-                document.getElementById('btn-start-game').classList.remove('hidden');
-                document.getElementById('wait-msg').classList.add('hidden');
-            }
-
-            // Слушаем изменения в комнате
-            const roomRef = db.ref('rooms/' + currentRoomId);
-            
-            roomRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if(!data) return;
-
-                // 1. Обновляем список игроков
-                const list = document.getElementById('waiting-list');
-                list.innerHTML = "";
-                if(data.players) {
-                    Object.values(data.players).forEach(p => {
-                        list.innerHTML += `<li class="player-item">${p.name} <span class="player-score">${p.score}</span></li>`;
-                    });
-                }
-
-                // 2. Проверка статуса игры
-                if(data.status === 'playing') {
-                    // Если мы еще в ожидании, переходим в игру
-                    if(!document.getElementById('screen-game').classList.contains('hidden')) {
-                         // already there
-                    } else {
-                         loadGameData(data.category);
-                    }
-                    
-                    // Синхронизация вопроса
-                    if(data.questionIndex !== currentQIndex) {
-                        currentQIndex = data.questionIndex;
-                        renderQuestion();
-                    }
-                } else if (data.status === 'finished') {
-                    showResults(data.players);
-                }
-            });
-        }
-
-        // --- Подготовка к игре ---
-        function startGame() {
-            // Хост нажимает старт
-            db.ref('rooms/' + currentRoomId).update({ status: 'playing' });
-        }
-
-        function loadGameData(category) {
-            // Загружаем вопросы из БД или дефолтные
-            db.ref('questions/' + category).once('value').then(snap => {
-                const fetched = snap.val();
-                if(fetched) {
-                    // Преобразуем объект Firebase в массив
-                    questions = Object.values(fetched);
-                } else {
-                    // Если нет в базе, берем дефолтные или заглушку
-                    questions = defaultQuestions[category] || defaultQuestions['math'];
-                }
-                // Перемешиваем вопросы (опционально)
-                // questions.sort(() => Math.random() - 0.5); 
-                
-                showScreen('screen-game');
-                document.getElementById('game-cat-display').innerText = category.toUpperCase();
-                renderQuestion();
-            });
-        }
-
-        // --- Процесс игры ---
-        function renderQuestion() {
-            if(currentQIndex >= questions.length) {
-                // Вопросы кончились
-                if(isHost) db.ref('rooms/' + currentRoomId).update({ status: 'finished' });
-                return;
-            }
-
-            const qData = questions[currentQIndex];
-            document.getElementById('question-text').innerText = qData.q;
-            document.getElementById('feedback-msg').innerText = "";
-            
-            const cont = document.getElementById('options-container');
-            cont.innerHTML = "";
-
-            // Перемешиваем ответы
-            let answers = [...qData.a];
-            if(qData.a.length === 4) answers.sort(() => Math.random() - 0.5);
-
-            answers.forEach(ans => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.innerText = ans;
-                btn.onclick = () => submitAnswer(btn, ans, qData.correct);
-                cont.appendChild(btn);
-            });
-        }
-
-        function submitAnswer(btn, value, correct) {
-            // Блокируем повторное нажатие
-            const allBtns = document.querySelectorAll('.option-btn');
-            allBtns.forEach(b => b.disabled = true);
-
-            if(value === correct) {
-                btn.classList.add('correct');
-                if(navigator.vibrate) navigator.vibrate(50); // Вибрация
-                
-                // Обновляем счет в БД
-                const scoreRef = db.ref(`rooms/${currentRoomId}/players/${currentPlayer.id}/score`);
-                scoreRef.transaction(currentScore => (currentScore || 0) + 10);
-                
-                document.getElementById('feedback-msg').innerText = "Верно! +10";
-                document.getElementById('feedback-msg').style.color = "green";
-            } else {
-                btn.classList.add('wrong');
-                if(navigator.vibrate) navigator.vibrate([100, 50, 100]); // Двойная вибрация
-                document.getElementById('feedback-msg').innerText = "Ошибка!";
-                document.getElementById('feedback-msg').style.color = "red";
-            }
-
-            // Если хост - через 3 секунды переключаем вопрос всем
-            if(isHost) {
-                setTimeout(() => {
-                    db.ref(`rooms/${currentRoomId}`).update({
-                        questionIndex: currentQIndex + 1
-                    });
-                }, 3000);
-            }
-        }
-
-        // --- Финал ---
-        function showResults(players) {
-            showScreen('screen-result');
-            // Меняем фон на золотистый
-            document.body.style.backgroundColor = "#ffeaa7";
-            
-            // Конфетти
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-
-            const list = document.getElementById('final-list');
-            list.innerHTML = "";
-            
-            // Сортировка
-            const sorted = Object.values(players).sort((a,b) => b.score - a.score);
-            
-            sorted.forEach((p, index) => {
-                let medal = "";
-                if(index === 0) medal = "🥇 ";
-                if(index === 1) medal = "🥈 ";
-                if(index === 2) medal = "🥉 ";
-                
-                list.innerHTML += `<li class="player-item" style="${index===0 ? 'background:#ffd70033; font-size:1.2em;' : ''}">
-                    <span>${medal}${p.name}</span>
-                    <span>${p.score}</span>
-                </li>`;
-            });
-        }
-
-        // ==========================================
-        // 🔐 АДМИНКА (AUTH)
-        // ==========================================
-        
-        document.getElementById('btn-login-toggle').onclick = () => {
-            const adminScreen = document.getElementById('screen-admin');
-            const authScreen = document.getElementById('screen-auth');
-            
-            if(!adminScreen.classList.contains('hidden')) {
-                showScreen('screen-lobby'); // Закрыть админку
-            } else {
-                // Проверка авторизации
-                if(auth.currentUser) showScreen('screen-admin');
-                else showScreen('screen-auth');
-            }
-        };
-
-        function login() {
-            const e = document.getElementById('auth-email').value;
-            const p = document.getElementById('auth-pass').value;
-            auth.signInWithEmailAndPassword(e, p)
-                .then(() => showScreen('screen-admin'))
-                .catch(err => document.getElementById('auth-msg').innerText = err.message);
-        }
-
-        function register() {
-            const e = document.getElementById('auth-email').value;
-            const p = document.getElementById('auth-pass').value;
-            auth.createUserWithEmailAndPassword(e, p)
-                .then(() => showScreen('screen-admin'))
-                .catch(err => document.getElementById('auth-msg').innerText = err.message);
-        }
-
-        function logout() {
-            auth.signOut().then(() => {
-                showScreen('screen-lobby');
-            });
-        }
-
-        function addQuestion() {
-            const cat = document.getElementById('new-cat').value;
-            const q = document.getElementById('new-q').value;
-            // Первый ответ считается правильным в форме ввода для простоты, 
-            // но в объект мы сохраняем полный набор
-            const correct = document.getElementById('new-a1').value;
-            const a2 = document.getElementById('new-a2').value;
-            const a3 = document.getElementById('new-a3').value;
-            const a4 = document.getElementById('new-a4').value;
-
-            if(!q || !correct) return alert("Заполните поля");
-
-            const newQ = {
-                q: q,
-                correct: correct,
-                a: [correct, a2, a3, a4]
-            };
-
-            db.ref('questions/' + cat).push(newQ)
-                .then(() => {
-                    alert("Вопрос добавлен!");
-                    document.getElementById('new-q').value = "";
-                });
-        }
-
-    </script>
-</body>
+    <audio
+      id="sound-correct"
+      src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXoGAACAgICAgICAgICAgICAgICAgICAgICAgICAf3hxeHCAgIB/cnVygICAf3J1coCAgH9ydXKAgIB/cnVygICAf3J1coCAgH9ydXKAgIB/cnVygICAf3J1coCAgH9ydXKAgIB/cnVygICAgICAgICAgICA"
+    ></audio>
+      <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="script.js"></script>
+  </body>
 </html>

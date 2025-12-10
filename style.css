@@ -227,3 +227,27 @@ input:focus, select:focus { outline: none; background: #eee; }
     background: #fff; padding: 40px; border: var(--border); box-shadow: 15px 15px 0 #fff;
     text-align: center;
 }
+
+/* --- НОВЫЕ СТИЛИ ДЛЯ ОНЛАЙН КНОПОК --- */
+.btn-local {
+    background: var(--dark);
+    margin-bottom: 5px;
+}
+.btn-online {
+    padding: 12px;
+    font-weight: bold;
+    border: 2px solid var(--dark);
+    cursor: pointer;
+    transition: transform 0.1s;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+.btn-create {
+    background: #2ed573;
+    color: var(--dark);
+}
+.btn-join {
+    background: #fff;
+    color: var(--dark);
+}
+.btn-online:active { transform: translateY(2px); box-shadow: none; }
