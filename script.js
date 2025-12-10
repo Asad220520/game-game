@@ -1,33 +1,14 @@
 // ==========================================
-// ⚙️ НАСТРОЙКИ FIREBASE (ЗАМЕНИТЕ НА СВОИ!)
+// ⚙️ НАСТРОЙКИ FIREBASE
 // ==========================================
-// ВАЖНО: Ваши настройки должны быть публичными для чтения/записи (см. предыдущий ответ)
-// const firebaseConfig = {
-//   apiKey: "YOUR_API_KEY", // <--- ЗАМЕНИТЕ НА СВОЙ
-//   authDomain: "YOUR_DOMAIN.firebaseapp.com", // <--- ЗАМЕНИТЕ НА СВОЙ
-//   databaseURL: "YOUR_DATABASE_URL", // <--- ЗАМЕНИТЕ НА СВОЙ
-//   projectId: "YOUR_PROJECT_ID", // <--- ЗАМЕНИТЕ НА СВОЙ
-//   // Остальные поля не критичны для Realtime DB
-// };
-
+// Используйте свои настройки. Убедитесь, что в базе данных Realtime DB
+// правила безопасности установлены на ".read": true, ".write": true
 const firebaseConfig = {
   apiKey: "AIzaSyAIQ6T04uz9ZzK435d3NSVIKfoFfbgRDow",
   authDomain: "games-563b9.firebaseapp.com",
-  databaseURL: "https://games-563b9-default-rtdb.firebaseio.com/", // <--- ЗАМЕНИТЕ НА СВОЙ
+  databaseURL: "https://games-563b9-default-rtdb.firebaseio.com", // <-- ПРАВИЛЬНЫЙ URL (без слэша)
   projectId: "games-563b9",
-  // storageBucket: "games-563b9.firebasestorage.app",
-  // messagingSenderId: "84338898086",
-  // appId: "1:84338898086:web:a096e8766d65f7129ef067",
-  // measurementId: "G-032GZRR0EJ",
 };
-
-// Запасные настройки, если вы не хотите менять код:
-// const firebaseConfig = {
-//     apiKey: "AIzaSyAIQ6T04uz9ZzK435d3NSVIKfoFfbgRDow",
-//     authDomain: "games-563b9.firebaseapp.com",
-//     databaseURL: "https://games-563b9-default-rtdb.firebaseio.com",
-//     projectId: "games-563b9",
-// };
 
 // Инициализация Firebase и DB
 if (typeof firebase !== "undefined") {
@@ -41,7 +22,7 @@ if (typeof firebase !== "undefined") {
   window.currentRoomRef = null;
   window.isOnline = false;
   window.isHost = false;
-  window.playerNum = 0; // 1 (Красные) или 2 (Синие)
+  window.playerNum = 0; // 1 (Красные, Хост) или 2 (Синие, Гость)
 } else {
   console.error("Firebase SDK не загружен. Онлайн-режим недоступен.");
 }
@@ -53,8 +34,8 @@ let settings = {
   difficulty: "20",
   team1Name: "Красные",
   team2Name: "Синие",
-  winOffset: 45,
-  step: 6,
+  winOffset: 45, // Процент смещения каната для победы
+  step: 6, // Процент сдвига за правильный ответ
 };
 
 let gameState = {
@@ -85,7 +66,7 @@ const els = {
   wrapper2: document.querySelector(".team-2-panel .monitor-wrapper"),
   winText: document.getElementById("winner-text"),
   sound: document.getElementById("sound-correct"),
-  // Новые элементы
+  // Элементы онлайн-режима
   onlineOptions: document.getElementById("online-options"),
   waitingInfo: document.getElementById("waiting-info"),
   displayRoomCode: document.getElementById("display-room-code"),
@@ -93,7 +74,7 @@ const els = {
 };
 
 // ==========================================
-// 🚀 ЛОКАЛЬНАЯ ЛОГИКА (НЕ ИЗМЕНЕНА)
+// 🚀 ОСНОВНАЯ ЛОГИКА ИГРЫ (ЛОКАЛЬНЫЙ РЕЖИМ)
 // ==========================================
 
 // Функция старта из меню (localMode: true/false)
@@ -120,10 +101,13 @@ function startGame(isOnlineMode) {
   gameState.active = true;
 
   if (window.isOnline) {
-    // В онлайн-режиме вопросы генерируются хостом в БД
-    if (window.isHost) generateQuestion(1); // Хост всегда команда 1
+    // В онлайн-режиме Хост генерирует вопросы для обоих команд
+    if (window.isHost) {
+      generateQuestion(1);
+      generateQuestion(2);
+    }
   } else {
-    // Локальный режим: генерируем вопросы для обоих
+    // Локальный режим
     generateQuestion(1);
     generateQuestion(2);
   }
@@ -137,10 +121,8 @@ function generateQuestion(teamId) {
   let a, b, ans, text;
   const diff = settings.difficulty;
 
-  // [Логика генерации вопросов - Оставлена без изменений]
-  // ... (Ваш код generateQuestion)
-
   if (diff === "hard") {
+    // Умножение/Деление
     if (Math.random() > 0.5) {
       a = rand(2, 12);
       b = rand(2, 12);
@@ -153,6 +135,7 @@ function generateQuestion(teamId) {
       text = `${a} ÷ ${b} = ?`;
     }
   } else {
+    // Сложение/Вычитание
     let maxVal = parseInt(diff);
     let op = Math.random() > 0.5 ? "+" : "-";
 
@@ -168,9 +151,8 @@ function generateQuestion(teamId) {
       text = `${a} - ${b} = ?`;
     }
   }
-  // [Конец логики генерации вопросов]
 
-  // Сохраняем состояние
+  // Сохраняем состояние локально
   if (teamId === 1) {
     gameState.team1.ans = ans;
     gameState.team1.buf = "";
@@ -197,7 +179,7 @@ function generateQuestion(teamId) {
 window.pressKey = function (teamId, key) {
   if (!gameState.active) return;
 
-  // 🔥 ОНЛАЙН: В онлайн-режиме игрок управляет только своей панелью
+  // 🔥 ОНЛАЙН: Игрок управляет только своей панелью
   if (window.isOnline && teamId !== window.playerNum) return;
 
   const team = teamId === 1 ? gameState.team1 : gameState.team2;
@@ -245,13 +227,13 @@ function checkAnswer(teamId) {
     updateRope();
     generateQuestion(teamId);
 
-    // 🔥 ОНЛАЙН: Отправляем новое состояние каната и счета в БД
+    // 🔥 ОНЛАЙН: Отправляем новое состояние в БД
     if (window.isOnline) {
       window.currentRoomRef.update({
         ropePos: gameState.ropePos,
         score1: gameState.team1.score,
         score2: gameState.team2.score,
-        lastWinner: teamId, // Полезно для синхронизации
+        lastWinner: teamId,
       });
     }
   } else {
@@ -299,8 +281,17 @@ function enterWaitingRoom(roomId) {
     const roomData = snapshot.val();
     if (!roomData) return;
 
+    // 🔥 Синхронизация имен команд (обновляем UI сразу)
+    if (roomData.team1Name && roomData.team2Name) {
+      settings.team1Name = roomData.team1Name;
+      settings.team2Name = roomData.team2Name;
+      els.label1.textContent = settings.team1Name;
+      els.label2.textContent = settings.team2Name;
+    }
+
     // 1. Ждем игрока 2
-    if (roomData.player2) {
+    if (roomData.player2 && !gameState.active) {
+      // Условие !gameState.active предотвращает повторный запуск
       els.waitingMessage.textContent = "Игрок 2 присоединился! НАЧИНАЕМ!";
 
       // Запускаем игру, когда оба готовы
@@ -313,8 +304,9 @@ function enterWaitingRoom(roomId) {
         : "Ожидание хоста...";
     }
 
-    // 2. Синхронизация состояния игры (для игрока 2)
-    if (!window.isHost && gameState.active) {
+    // 2. Синхронизация состояния игры (для Гостя - Player 2)
+    if (window.isOnline && !window.isHost && gameState.active) {
+      // Обновление счета и каната
       gameState.ropePos = roomData.ropePos || 0;
       gameState.team1.score = roomData.score1 || 0;
       gameState.team2.score = roomData.score2 || 0;
@@ -324,16 +316,23 @@ function enterWaitingRoom(roomId) {
       updateRope();
 
       // Синхронизация вопросов
-      const qKey = window.playerNum === 1 ? "q1" : "q2";
-      if (roomData[qKey]) {
-        const qData = roomData[qKey];
-        const team = window.playerNum === 1 ? gameState.team1 : gameState.team2;
-        const qEl = window.playerNum === 1 ? els.q1 : els.q2;
 
-        team.ans = qData.ans;
-        team.buf = "";
-        qEl.textContent = qData.text;
-        updateScreen(window.playerNum);
+      // Обновление вопроса для Команды 1 (Хоста)
+      if (roomData.q1) {
+        gameState.team1.ans = roomData.q1.ans;
+        els.q1.textContent = roomData.q1.text;
+      }
+
+      // Обновление вопроса для Команды 2 (Гостя)
+      if (roomData.q2) {
+        gameState.team2.ans = roomData.q2.ans;
+        els.q2.textContent = roomData.q2.text;
+      }
+
+      // Обнуляем буферы ввода Гостя, чтобы он видел только свое
+      if (window.playerNum === 2) {
+        gameState.team2.buf = "";
+        updateScreen(2);
       }
     }
   });
@@ -348,6 +347,9 @@ window.createOnlineRoom = function () {
   window.isHost = true;
   window.playerNum = 1;
 
+  // Получаем имя команды 1 до записи в БД
+  const t1Name = document.getElementById("name-team-1").value || "Хост";
+
   // Создаем комнату в БД
   window.db
     .ref("rooms/" + roomId)
@@ -359,14 +361,19 @@ window.createOnlineRoom = function () {
       ropePos: 0,
       score1: 0,
       score2: 0,
+      team1Name: t1Name,
+      team2Name: document.getElementById("name-team-2").value || "Синие",
     })
     .then(() => {
-      // Назначаем имя для команды 1
-      document.getElementById("name-team-1").value =
-        document.getElementById("name-team-1").value || "Хост";
-      // Блокируем имя команды 2, пока не присоединится
+      // Обновляем UI локально
+      document.getElementById("name-team-1").value = t1Name;
       document.getElementById("name-team-2").disabled = true;
       enterWaitingRoom(roomId);
+
+      // Автоматическое удаление комнаты при закрытии
+      if (window.isHost) {
+        window.currentRoomRef.onDisconnect().remove();
+      }
     });
 };
 
@@ -382,14 +389,18 @@ window.joinOnlineRoom = function () {
   window.playerNum = 2; // Игрок 2 всегда синие
 
   const roomRef = window.db.ref("rooms/" + roomId);
+  const t2Name = document.getElementById("name-team-2").value || "Гость";
 
-  roomRef.get().then((snapshot) => {
+  // Используем once('value') для гарантированного получения свежих данных (защита от кеша)
+  roomRef.once("value").then((snapshot) => {
     if (!snapshot.exists()) {
       return alert("Комната не найдена.");
     }
 
     const data = snapshot.val();
-    if (data.player2 !== null) {
+
+    // 🔥 НАДЕЖНАЯ ПРОВЕРКА: Если player2 имеет ЛЮБОЕ значение (не null/undefined/false), он занят
+    if (data.player2) {
       return alert("Комната уже заполнена.");
     }
 
@@ -397,12 +408,11 @@ window.joinOnlineRoom = function () {
     roomRef
       .update({
         player2: "Guest_" + Date.now(),
+        team2Name: t2Name, // Гость обновляет имя своей команды
       })
       .then(() => {
-        // Назначаем имя для команды 2
-        document.getElementById("name-team-2").value =
-          document.getElementById("name-team-2").value || "Гость";
-        // Блокируем имя команды 1
+        // Обновляем UI локально
+        document.getElementById("name-team-2").value = t2Name;
         document.getElementById("name-team-1").disabled = true;
         enterWaitingRoom(roomId);
       });
